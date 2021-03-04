@@ -11,40 +11,47 @@ from tensorflow.keras.utils import to_categorical
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
 # flatten 28*28 images to a 784 vector for each image
-num_pixels = x_train.shape[1] * x_train.shape[2]
+matrix = np.dot(x_train.shape[1], x_train.shape[2])
 
 #change type to float32
-x_train = x_train.reshape((x_train.shape[0], num_pixels)).astype('float32')
-x_test = x_test.reshape((x_test.shape[0], num_pixels)).astype('float32')
+x_train = x_train.reshape(x_train.shape[0], 28, 28, 1).astype('float32')
+x_test = x_test.reshape(x_test.shape[0], 28, 28, 1).astype('float32')
 
 # normalize inputs from 0-255 to 0-1
 x_train = x_train / 255 #check how this works
 x_test = x_test / 255
 
-x_val = x_train[-5000:,:]
+x_val = x_train[-5000:,:] #what does this mean? randomly taking samples?
 x_train = x_train[:-5000,:]
 
 # one hot encode outputs
 y_train = to_categorical(y_train)
 y_test = to_categorical(y_test)
-num_classes = y_test.shape[1]
 
-y_val = y_train[-5000:,:] #what does this mean? randomly taking samples?
+y_val = y_train[-5000:,:]
 y_train = y_train[:-5000,:]
 
 #%%define model
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Dense
+from tensorflow.keras.layers import Input, Dense, Conv2D, MaxPool2D
 
-n_epochs = 10
+n_epochs = 10 #10 training epochs
 
-N_in = np.shape(x_train)[-1]
-N_out = np.size(y_train,-1)
-print(N_in)
-x_ = Input(shape=(N_in,))
-x = Dense(20,activation='relu')(x_)
-x = Dense(100,activation='relu')(x)
-y = Dense(10,activation='softmax')(x)
+# N_in = np.size(x_train)[1] #784 = 28 * 28
+N_out = np.size(y_train,1) #10
+# print (N_in)
+# print(N_out)
+x_ = Input(shape=(28,28,1))
+x1 = Conv2D(filters=20, 
+            kernel_size=(5,5), 
+            activation='relu',)(x_)
+x2 = MaxPool2D((2,2))(x1) #is this the pooling size or strides? what does it mean if strides=(2,2)
+x3 = Conv2D(filters=50, 
+            kernel_size=(5,5), 
+            activation='relu',)(x2)
+x4 = MaxPool2D((2,2))(x3)
+x5 = Dense(500,activation='relu')(x4)
+y = Dense(10,activation='softmax')(x5)
 model = Model(inputs=x_, outputs=y)
 
 model.summary()
@@ -60,7 +67,7 @@ model.compile(optimizer = optimizer,
 
 
 #%%start training
-history = model.fit(x=x_train, y=y_train, batch_size=64, epochs=n_epochs, verbose=1,
+history = model.fit(x_train, y_train, batch_size=64, epochs=n_epochs, verbose=1,
           validation_data=(x_val,y_val))
     
 #model evaluation

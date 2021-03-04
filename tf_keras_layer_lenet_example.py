@@ -16,17 +16,17 @@ seed(1)
 ########################################################################################################
 # Activate the following lines for GPU's usage, comment these lines if no GPU's are avilable
 
-print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
-gpus = tf.config.experimental.list_physical_devices('GPU')
-if gpus:
-# Currently, memory growth needs to be the same across GPUs
-    try:
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
-    except RuntimeError as e:
-        print(e)
+# print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
+# gpus = tf.config.experimental.list_physical_devices('GPU')
+# if gpus:
+# # Currently, memory growth needs to be the same across GPUs
+#     try:
+#         for gpu in gpus:
+#             tf.config.experimental.set_memory_growth(gpu, True)
+#     except RuntimeError as e:
+#         print(e)
 
-tf.config.experimental.set_visible_devices(gpus[0],'GPU')
+# tf.config.experimental.set_visible_devices(gpus[0],'GPU')
 
 
 ########################################################################################################
@@ -71,7 +71,8 @@ n_epochs = 10
 
 N_in = np.shape(x_train)[-1]
 N_out = np.size(y_train,-1)
-
+print(N_in)
+print(N_out)
 x_ = Input(shape=(N_in,))
 x = Dense(300,activation='relu')(x_)
 x = Dense(100,activation='relu')(x)
