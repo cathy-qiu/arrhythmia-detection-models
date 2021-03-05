@@ -10,9 +10,6 @@ from tensorflow.keras.utils import to_categorical
 #%%load data
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
-# flatten 28*28 images to a 784 vector for each image
-matrix = np.dot(x_train.shape[1], x_train.shape[2])
-
 #change type to float32
 x_train = x_train.reshape(x_train.shape[0], 28, 28, 1).astype('float32')
 x_test = x_test.reshape(x_test.shape[0], 28, 28, 1).astype('float32')
@@ -37,11 +34,12 @@ from tensorflow.keras.layers import Input, Dense, Conv2D, MaxPool2D
 
 n_epochs = 10 #10 training epochs
 
-# N_in = np.size(x_train)[1] #784 = 28 * 28
+N_inx = np.shape(x_train)[1]
+N_iny = np.shape(x_train)[2]
 N_out = np.size(y_train,1) #10
 # print (N_in)
 # print(N_out)
-x_ = Input(shape=(28,28,1))
+x_ = Input(shape=(60000, N_inx, N_iny, 1))
 x1 = Conv2D(filters=20, 
             kernel_size=(5,5), 
             activation='relu',)(x_)
@@ -50,6 +48,7 @@ x3 = Conv2D(filters=50,
             kernel_size=(5,5), 
             activation='relu',)(x2)
 x4 = MaxPool2D((2,2))(x3)
+#flatten to a vector
 x5 = Dense(500,activation='relu')(x4)
 y = Dense(10,activation='softmax')(x5)
 model = Model(inputs=x_, outputs=y)

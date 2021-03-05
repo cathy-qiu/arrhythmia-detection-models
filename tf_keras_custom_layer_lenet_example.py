@@ -18,17 +18,17 @@ import numpy as np
 ########################################################################################################
 # Activate the following lines for GPU's usage, comment these lines if no GPU's are avilable
 
-print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
-gpus = tf.config.experimental.list_physical_devices('GPU')
-if gpus:
-# Currently, memory growth needs to be the same across GPUs
-    try:
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
-    except RuntimeError as e:
-        print(e)
+# print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
+# gpus = tf.config.experimental.list_physical_devices('GPU')
+# if gpus:
+# # Currently, memory growth needs to be the same across GPUs
+#     try:
+#         for gpu in gpus:
+#             tf.config.experimental.set_memory_growth(gpu, True)
+#     except RuntimeError as e:
+#         print(e)
 
-tf.config.experimental.set_visible_devices(gpus[2],'GPU')
+# tf.config.experimental.set_visible_devices(gpus[2],'GPU')
 
 
 ##########################################################################################################################
