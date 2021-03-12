@@ -33,58 +33,58 @@ from keras import backend as K
 
 ##########################################################################################################################
 ############################################################################################################################
-class CustomConv2D(Layer):
-    def __init__(self, filters, **kwargs):
-        self.filters = filters
-        self.kernel_size = (3, 3)
-        super(CustomConv2D, self).__init__(**kwargs)
+# class CustomConv2D(Layer):
+#     def __init__(self, filters, **kwargs):
+#         self.filters = filters
+#         self.kernel_size = (3, 3)
+#         super(CustomConv2D, self).__init__(**kwargs)
 
-    def build(self, input_shape):
-        # only have a 3x3 kernel
-        shape = self.kernel_size + (input_shape[-1], self.filters)
-        self.kernel = self.add_weight(name='kernel', shape=shape,
-                                      initializer='glorot_uniform')
-        super(CustomConv2D, self).build(input_shape)
+#     def build(self, input_shape):
+#         # only have a 3x3 kernel
+#         shape = self.kernel_size + (input_shape[-1], self.filters)
+#         self.kernel = self.add_weight(name='kernel', shape=shape,
+#                                       initializer='glorot_uniform')
+#         super(CustomConv2D, self).build(input_shape)
 
-    def call(self, x):
-        # duplicate rows 0 and 2
-        dup_rows = K.stack([self.kernel[0]]*2 + [self.kernel[1]] + [self.kernel[2]]*2, axis=0)
-        # duplicate cols 0 and 2
-        dup_cols = K.stack([dup_rows[:,0]]*2 + [dup_rows[:,1]] + [dup_rows[:,2]]*2, axis=1)
-        # having a 5x5 kernel now
-        return K.conv2d(x, dup_cols)
+#     def call(self, x):
+#         # duplicate rows 0 and 2
+#         dup_rows = K.stack([self.kernel[0]]*2 + [self.kernel[1]] + [self.kernel[2]]*2, axis=0)
+#         # duplicate cols 0 and 2
+#         dup_cols = K.stack([dup_rows[:,0]]*2 + [dup_rows[:,1]] + [dup_rows[:,2]]*2, axis=1)
+#         # having a 5x5 kernel now
+#         return K.conv2d(x, dup_cols)
 
-    def compute_output_shape(self, input_shape):
-        return input_shape[:-1] + (self.filters,)
+#     def compute_output_shape(self, input_shape):
+#         return input_shape[:-1] + (self.filters,)
 
-from keras.engine import Layer, InputSpec
-from keras.layers import Flatten
-import tensorflow as tf
+# from keras.engine import Layer, InputSpec
+# from keras.layers import Flatten
+# import tensorflow as tf
 
 
-class CustomMaxPooling(Layer):
-    def __init__(self, k=1, **kwargs):
-        super().__init__(**kwargs)
-        self.input_spec = InputSpec(ndim=3)
-        self.k = k
+# class CustomMaxPooling(Layer):
+#     def __init__(self, k=1, **kwargs):
+#         super().__init__(**kwargs)
+#         self.input_spec = InputSpec(ndim=3)
+#         self.k = k
 
-    def compute_output_shape(self, input_shape):
-        return input_shape[0], (input_shape[2] * self.k)
+#     def compute_output_shape(self, input_shape):
+#         return input_shape[0], (input_shape[2] * self.k)
 
-    def call(self, inputs):
-        # swap last two dimensions since top_k will be applied along the last dimension
-        shifted_input = tf.transpose(inputs, [0, 2, 1])
+#     def call(self, inputs):
+#         # swap last two dimensions since top_k will be applied along the last dimension
+#         shifted_input = tf.transpose(inputs, [0, 2, 1])
 
-        # extract top_k, returns two tensors [values, indices]
-        top_k = tf.nn.top_k(shifted_input, k=self.k, sorted=True, name=None)[0]
+#         # extract top_k, returns two tensors [values, indices]
+#         top_k = tf.nn.top_k(shifted_input, k=self.k, sorted=True, name=None)[0]
 
-        # return flattened output
-        return Flatten()(top_k)
+#         # return flattened output
+#         return Flatten()(top_k)
 
-    def get_config(self):
-        config = {'k': self.k}
-        base_config = super().get_config()
-        return {**base_config, **config}
+#     def get_config(self):
+#         config = {'k': self.k}
+#         base_config = super().get_config()
+#         return {**base_config, **config}
 
 
 class my_dense_layer(Layer):   
@@ -167,17 +167,12 @@ n_epochs = 20
 N_inx = np.shape(x_train)[1]
 N_iny = np.shape(x_train)[2]
 N_out = np.size(y_train,1) #10
-# print (N_in)
-# print(N_out)
-x_ = Input(shape=(60000,N_inx,N_iny,1))
-x1 = CustomConv2D(filters=20, 
-            kernel_size=(5,5), 
-            activation='relu',)(x_)
-x2 = CustomMaxPooling((2,2))(x1)
-x3 = CustomConv2D(filters=50, 
-            kernel_size=(5,5), 
-            activation='relu',)(x2)
-x4 = CustomMaxPooling((2,2))(x3)
+
+x_ = Input(shape=(N_inx,N_iny,1))
+x1 = tf.nn.conv2d(x_, filters=20, kernel=[5,5])
+x2 = tf.nn.max_pool(input=x1, ksize=[2,2])
+x3 = tf.nn.conv2d(x2, filters=50, kernel=[5,5])
+x4 = tf.nn.max_pool(input=x3, ksize=[2,2])
 x5 = my_dense_layer(500,activation='relu')(x4)
 y = my_dense_layer(10,activation='softmax')(x5)
 model = Model(inputs=x_, outputs=y)
