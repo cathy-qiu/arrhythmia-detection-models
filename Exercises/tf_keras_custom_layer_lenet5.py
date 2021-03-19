@@ -88,11 +88,18 @@ from keras import backend as K
 
 
 class my_dense_layer(Layer):   
-    def __init__(self,units, activation=None, name=None, **kwargs):
+    def __init__(self, units, activation=None, name=None, kernel_size, filters, strides, **kwargs):
         self.units = units
         self.activation = activation
+        # self.kernel_size = kernel_size
+        # self.filters = filters
+        # self.strides = strides
+
         super(my_dense_layer, self).__init__(name=name, **kwargs) 
-        
+
+        self.conv2d = tf.nn.conv2d(filters, kernel_size)
+        self.maxpool = tf.nn.max_pool(strides)
+
     def get_config(self):
         config = super().get_config().copy()
         config.update({
@@ -110,20 +117,27 @@ class my_dense_layer(Layer):
         self.b = self.add_weight(shape=(self.units,),
                                  initializer='zeros',
                                  trainable=True, name='b',  dtype='float32')
-        
-
 
         super(my_dense_layer, self).build(input_shape) 
  
     def call(self, x):
         units = self.units
-   
+
+        x = self.conv2a(x)
+        # x = tf.nn.relu(x)
+        x = self.maxpool(x)
+
+
+        x += input_tensor
+        return tf.nn.relu(x)
         # Produce layer output
 
         y = tf.add(tf.matmul(x, self.W),self.b)
         if not self.activation == None:
             y = Activation(self.activation)(y)
         
+        
+
         return y
 
 ########################################################################################################
@@ -169,12 +183,12 @@ N_iny = np.shape(x_train)[2]
 N_out = np.size(y_train,1) #10
 
 x_ = Input(shape=(N_inx,N_iny,1))
-x1 = tf.nn.conv2d(x_, filters=20, kernel=[5,5])
-x2 = tf.nn.max_pool(input=x1, ksize=[2,2])
-x3 = tf.nn.conv2d(x2, filters=50, kernel=[5,5])
-x4 = tf.nn.max_pool(input=x3, ksize=[2,2])
-x5 = my_dense_layer(500,activation='relu')(x4)
-y = my_dense_layer(10,activation='softmax')(x5)
+x1 = my_dense_layer(filters=20,activation='relu',kernel_size=(5,5))(x_)
+x2 = my_dense_layer(strides=(2,2))(x1)
+x3 = my_dense_layer(filters=50,activation='relu',kernel_size=(5,5))(x2)
+x4 = my_dense_layer(strides=(2,2))(x3)
+x5 = my_dense_layer(units=500,activation='relu')(x4)
+y = my_dense_layer(units=10,activation='softmax')(x5)
 model = Model(inputs=x_, outputs=y)
 
 model.summary()
