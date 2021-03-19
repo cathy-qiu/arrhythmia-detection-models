@@ -88,7 +88,7 @@ from keras import backend as K
 
 
 class my_dense_layer(Layer):   
-    def __init__(self, units, activation=None, name=None, kernel_size, filters, strides, **kwargs):
+    def __init__(self, units, kernel_size, filters, strides, activation=None, name=None, **kwargs):
         self.units = units
         self.activation = activation
         # self.kernel_size = kernel_size
@@ -97,7 +97,7 @@ class my_dense_layer(Layer):
 
         super(my_dense_layer, self).__init__(name=name, **kwargs) 
 
-        self.conv2d = tf.nn.conv2d(filters, kernel_size)
+        self.conv2d = tf.nn.conv2d(filters, kernel_size, strides=0, padding='same')
         self.maxpool = tf.nn.max_pool(strides)
 
     def get_config(self):
@@ -183,9 +183,9 @@ N_iny = np.shape(x_train)[2]
 N_out = np.size(y_train,1) #10
 
 x_ = Input(shape=(N_inx,N_iny,1))
-x1 = my_dense_layer(filters=20,activation='relu',kernel_size=(5,5))(x_)
-x2 = my_dense_layer(strides=(2,2))(x1)
-x3 = my_dense_layer(filters=50,activation='relu',kernel_size=(5,5))(x2)
+x1 = my_dense_layer(units=0, strides=0, filters=20, activation='relu',kernel_size=(5,5))(x_)
+x2 = my_dense_layer(units=0, filters=0, strides=(2,2))(x1)
+x3 = my_dense_layer(units=0, strides=0, filters=50, activation='relu',kernel_size=(5,5))(x2)
 x4 = my_dense_layer(strides=(2,2))(x3)
 x5 = my_dense_layer(units=500,activation='relu')(x4)
 y = my_dense_layer(units=10,activation='softmax')(x5)
