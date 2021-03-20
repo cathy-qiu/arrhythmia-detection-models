@@ -88,13 +88,9 @@ from keras import backend as K
 
 
 class my_dense_layer(Layer):   
-    def __init__(self, units, kernel_size, filters, strides, activation=None, name=None, **kwargs):
+    def __init__(self, units, activation=None, name=None, **kwargs):
         self.units = units
         self.activation = activation
-        # self.kernel_size = kernel_size
-        # self.filters = filters
-        # self.strides = strides
-
         super(my_dense_layer, self).__init__(name=name, **kwargs) 
 
         self.conv2d = tf.nn.conv2d(filters, kernel_size, strides=0, padding='same')
@@ -123,22 +119,50 @@ class my_dense_layer(Layer):
     def call(self, x):
         units = self.units
 
-        x = self.conv2a(x)
-        # x = tf.nn.relu(x)
-        x = self.maxpool(x)
-
-
-        x += input_tensor
-        return tf.nn.relu(x)
         # Produce layer output
-
         y = tf.add(tf.matmul(x, self.W),self.b)
         if not self.activation == None:
             y = Activation(self.activation)(y)
-        
-        
-
+    
         return y
+
+
+class my_conv(Layer):
+    def __init__(self, kernel_size, filters, strides, channel_size, activation=None, name=None, **kwargs):
+        self.kernel_size = kernel_size
+        self.filters = filters
+        self.strides = strides
+        self.channel_size = channel_size
+        self.activation = activation
+
+        super(my_conv, self).__init__(name=name, **kwargs) 
+    
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'activation':self.activation,
+            'kernel_size':self.kernel_size,
+            'filters':self.filters,
+            'channel_size':self.channel_size
+        })
+        return config
+
+    def build(self, input_shape):
+        self.w = self.add_weight(shape=[self.kernel_size, self.kernel_size, self.channel_size, self.filters],
+                                initializer='he_uniform',
+                                trainable=True, name='w', dtype='float32')
+        self.b = self.add_weight(shape=(self.filters),
+                                initializer='zeros',
+                                trainable=True, name='b', dtype='float32')
+        super(my_conv, self).build(input_shape) 
+    
+    def call(self, x):
+        # Produce layer output
+        y = tf.nn.conv2d(x, self.w, padding = 'SAME')
+        y = tf.nn.bias_add(y, self.b)
+        
+        return y
+
 
 ########################################################################################################
 ########################################################################################################
@@ -183,10 +207,10 @@ N_iny = np.shape(x_train)[2]
 N_out = np.size(y_train,1) #10
 
 x_ = Input(shape=(N_inx,N_iny,1))
-x1 = my_dense_layer(units=0, strides=0, filters=20, activation='relu',kernel_size=(5,5))(x_)
-x2 = my_dense_layer(units=0, filters=0, strides=(2,2))(x1)
-x3 = my_dense_layer(units=0, strides=0, filters=50, activation='relu',kernel_size=(5,5))(x2)
-x4 = my_dense_layer(strides=(2,2))(x3)
+x1 = my_conv(kernel_size=5, strides=0, filters=20, activation='relu',kernel_size=(5,5))(x_)
+x2 = my_conv(units=0, filters=0, strides=(2,2))(x1)
+x3 = my_conv(units=0, strides=0, filters=50, activation='relu',kernel_size=(5,5))(x2)
+x4 = my_conv(strides=(2,2))(x3)
 x5 = my_dense_layer(units=500,activation='relu')(x4)
 y = my_dense_layer(units=10,activation='softmax')(x5)
 model = Model(inputs=x_, outputs=y)
