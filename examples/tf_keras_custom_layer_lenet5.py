@@ -10,10 +10,10 @@ my_dense_layer(units, ativation)
 
 import tensorflow as tf
 from tensorflow.keras import backend as K
-from tensorflow.keras.layers import Layer, Lambda, Activation, MaxPooling2D, Flatten
+from tensorflow.keras.layers import Layer, Lambda, Activation
 from tensorflow.keras import regularizers
 import numpy as np
-from keras import backend as K
+
 ########################################################################################################
 ########################################################################################################
 # Activate the following lines for GPU's usage, comment these lines if no GPU's are avilable
@@ -33,74 +33,21 @@ from keras import backend as K
 
 ##########################################################################################################################
 ############################################################################################################################
-# class CustomConv2D(Layer):
-#     def __init__(self, filters, **kwargs):
-#         self.filters = filters
-#         self.kernel_size = (3, 3)
-#         super(CustomConv2D, self).__init__(**kwargs)
 
-#     def build(self, input_shape):
-#         # only have a 3x3 kernel
-#         shape = self.kernel_size + (input_shape[-1], self.filters)
-#         self.kernel = self.add_weight(name='kernel', shape=shape,
-#                                       initializer='glorot_uniform')
-#         super(CustomConv2D, self).build(input_shape)
-
-#     def call(self, x):
-#         # duplicate rows 0 and 2
-#         dup_rows = K.stack([self.kernel[0]]*2 + [self.kernel[1]] + [self.kernel[2]]*2, axis=0)
-#         # duplicate cols 0 and 2
-#         dup_cols = K.stack([dup_rows[:,0]]*2 + [dup_rows[:,1]] + [dup_rows[:,2]]*2, axis=1)
-#         # having a 5x5 kernel now
-#         return K.conv2d(x, dup_cols)
-
-#     def compute_output_shape(self, input_shape):
-#         return input_shape[:-1] + (self.filters,)
-
-# from keras.engine import Layer, InputSpec
-# from keras.layers import Flatten
-# import tensorflow as tf
-
-
-# class CustomMaxPooling(Layer):
-#     def __init__(self, k=1, **kwargs):
-#         super().__init__(**kwargs)
-#         self.input_spec = InputSpec(ndim=3)
-#         self.k = k
-
-#     def compute_output_shape(self, input_shape):
-#         return input_shape[0], (input_shape[2] * self.k)
-
-#     def call(self, inputs):
-#         # swap last two dimensions since top_k will be applied along the last dimension
-#         shifted_input = tf.transpose(inputs, [0, 2, 1])
-
-#         # extract top_k, returns two tensors [values, indices]
-#         top_k = tf.nn.top_k(shifted_input, k=self.k, sorted=True, name=None)[0]
-
-#         # return flattened output
-#         return Flatten()(top_k)
-
-#     def get_config(self):
-#         config = {'k': self.k}
-#         base_config = super().get_config()
-#         return {**base_config, **config}
 
 
 class my_dense_layer(Layer):   
-    def __init__(self, units, activation=None, name=None, **kwargs):
+    def __init__(self,units, activation=None, name=None, **kwargs):
         self.units = units
         self.activation = activation
         super(my_dense_layer, self).__init__(name=name, **kwargs) 
-
-        self.conv2d = tf.nn.conv2d(filters, kernel_size, strides=0, padding='same')
-        self.maxpool = tf.nn.max_pool(strides)
-
+        
     def get_config(self):
         config = super().get_config().copy()
         config.update({
             'units':self.units, 
             'activation':self.activation,
+
         })
         return config
 
@@ -113,29 +60,32 @@ class my_dense_layer(Layer):
         self.b = self.add_weight(shape=(self.units,),
                                  initializer='zeros',
                                  trainable=True, name='b',  dtype='float32')
+        
+
 
         super(my_dense_layer, self).build(input_shape) 
  
     def call(self, x):
         units = self.units
-
+   
         # Produce layer output
+
         y = tf.add(tf.matmul(x, self.W),self.b)
         if not self.activation == None:
             y = Activation(self.activation)(y)
-    
+        
         return y
-
-
-class my_conv(Layer):
-    def __init__(self, kernel_size, filters, channel_size, activation=None, name=None, **kwargs):
+        
+        
+class my_conv2D(Layer):   
+    def __init__(self, kernel_size, filters,channel_size, activation=None, name=None, **kwargs):
+        self.activation = activation
         self.kernel_size = kernel_size
         self.filters = filters
         self.channel_size = channel_size
-        self.activation = activation
-
-        super(my_conv, self).__init__(name=name, **kwargs) 
-    
+       
+        super(my_conv2D, self).__init__(name=name, **kwargs) 
+        
     def get_config(self):
         config = super().get_config().copy()
         config.update({
@@ -143,25 +93,30 @@ class my_conv(Layer):
             'kernel_size':self.kernel_size,
             'filters':self.filters,
             'channel_size':self.channel_size
+
         })
         return config
 
-    def build(self, input_shape):
-        self.w = self.add_weight(shape=[self.kernel_size, self.kernel_size, self.channel_size, self.filters],
-                                initializer='he_uniform',
-                                trainable=True, name='w', dtype='float32')
-        self.b = self.add_weight(shape=(self.filters),
-                                initializer='zeros',
-                                trainable=True, name='b', dtype='float32')
-        super(my_conv, self).build(input_shape) 
-    
+    def build(self, input_shape): 
+        # Define weight matrix and bias vector
+        self.k = self.add_weight(shape=[self.kernel_size,self.kernel_size, self.channel_size, self.filters],
+                                 initializer='he_uniform',
+                                 #regularizer=regularizers.l2(0.0005),
+                                 trainable=True, name='w', dtype='float32')
+        self.b = self.add_weight(shape=(self.filters,),
+                                 initializer='zeros',
+                                 trainable=True, name='b',  dtype='float32')
+        
+
+
+        super(my_conv2D, self).build(input_shape) 
+ 
     def call(self, x):
         # Produce layer output
-        y = tf.nn.conv2d(x, self.w, strides=1, padding = 'SAME')
-        y = tf.nn.bias_add(y, self.b)
+        y = tf.nn.conv2d(x, self.k, strides=1, padding = 'SAME')
+        y = tf.nn.bias_add(y,self.b)  
         
         return y
-
 
 ########################################################################################################
 ########################################################################################################
@@ -171,10 +126,8 @@ from tensorflow.keras.datasets import mnist
 from tensorflow.keras.utils import to_categorical
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
-
-#change type to float32
-x_train = x_train.reshape(x_train.shape[0], 28, 28, 1)
-x_test = x_test.reshape(x_test.shape[0], 28, 28, 1)
+x_train = x_train.reshape(x_train.shape[0], 28, 28,1)
+x_test = x_test.reshape(x_test.shape[0], 28, 28,1)
 
 # normalize inputs from 0-255 to 0-1
 x_train = x_train / 255
@@ -196,23 +149,29 @@ y_train = y_train[:-5000,:]
 #%% Define sparseConnect Model
 
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Dense
+from tensorflow.keras.layers import Input, Dense, Activation, MaxPooling2D, Flatten, Conv2D
 
 # Parameters
 n_epochs = 20
 
 N_in = np.shape(x_train)[-2]
 N_channel = np.shape(x_train)[-1]
-# N_out = np.size(y_train, 1) #10
+N_out = np.size(y_train,-1)
 
-x_ = Input(shape=(N_in,N_in,N_channel))
-x = my_conv(kernel_size=5, filters=20, channel_size=1, activation='relu')(x_)
-x = MaxPooling2D((3,3), strides=2)(x)
-x = my_conv(kernel_size=5, filters=50, channel_size=1, activation='relu')(x)
-x = MaxPooling2D((3,3), strides=2)(x)
+x_ = Input(shape=(N_in, N_in, N_channel))
+x = my_conv2D(kernel_size=3, filters=20, channel_size = 1, activation='relu')(x_)
+#x = Cconv2D(20, kernel_size = (3,3), strides=1, padding = 'SAME')(x_)
+x = Activation('relu')(x)
+x = MaxPooling2D((2, 2), strides=(2, 2))(x)
+
+x = my_conv2D(kernel_size=3,filters=50, channel_size = 20, activation='relu')(x)
+#x = Conv2D(50, kernel_size = (3,3), strides=1, padding = 'SAME')(x)
+x = Activation('relu')(x)
+x = MaxPooling2D((2, 2), strides=(2, 2))(x)
 x = Flatten()(x)
-x = my_dense_layer(units=500,activation='relu')(x)
-y = my_dense_layer(units=10,activation='softmax')(x)
+
+x = my_dense_layer(512,activation='relu')(x)
+y = my_dense_layer(10,activation='softmax')(x)
 model = Model(inputs=x_, outputs=y)
 
 model.summary()
@@ -227,11 +186,51 @@ optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
 model.compile(optimizer = optimizer,
              loss='categorical_crossentropy',
               metrics=['categorical_accuracy'])
+              
 
-#%% Start training
-history = model.fit(x=x_train, y=y_train, batch_size=64, epochs=n_epochs, verbose=1,
-          validation_data=(x_val,y_val))
+history = model.fit(x=x_train, y=y_train,
+                            batch_size = 64,
+                            epochs=20,
+                            validation_data=(x_val, y_val),verbose=1)
+
+# validation_data=(x_val, y_val)
+results = model.evaluate(x_test, y_test, batch_size=64)
+              
+# callback_model_checkpoint=tf.keras.callbacks.ModelCheckpoint(
+  # filepath='lenet5_weights.{epoch:02d}-{val_loss:.2f}.hdf5',
+  # monitor = "val_loss",
+  # verbose = 0,
+  # save_best_only = False,
+  # save_weights_only = False,
+  # save_freq = "epoch"
+# )
+# callbacks = [callback_model_checkpoint]
+              
+# # #%% Start training
+# #history = model.fit(x=x_train, y=y_train, batch_size=64, epochs=1, verbose=1,
+# #         validation_data=(x_val,y_val), callbacks=callbacks)
     
-#model evaluation   
-test_results = model.evaluate(x_test, y_test, batch_size=64)
-print('test accuracy:', test_results[1])
+
+
+
+
+# def get_flops(model):
+    # session = tf.compat.v1.Session()
+    # graph = tf.compat.v1.get_default_graph()
+        
+
+    # with graph.as_default():
+        # with session.as_default():
+            # model = tf.keras.models.load_model(model, custom_objects={'my_dense_layer':my_dense_layer}) # 'my_conv2D':my_conv2D
+
+            # run_meta = tf.compat.v1.RunMetadata()
+            # opts = tf.compat.v1.profiler.ProfileOptionBuilder.float_operation()
+        
+            # # We use the Keras session graph in the call to the profiler.
+            # flops = tf.compat.v1.profiler.profile(graph=graph,
+                                                  # run_meta=run_meta, cmd='op', options=opts)
+        
+            # return flops.total_float_ops
+
+# flops = get_flops('lemet5_weights.01-0.05.hdf5')
+# print(flops)
